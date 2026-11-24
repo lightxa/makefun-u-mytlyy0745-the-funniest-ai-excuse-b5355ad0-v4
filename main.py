@@ -1,50 +1,54 @@
-#!/usr/bin/env python3
-"""The Funniest AI Excuse — make.fun entry, variant 4.
+"""The Funniest AI Excuse — variant 4.
 
-Writes one line, at most 200 characters, to /output/entry.txt:
-the funniest excuse an AI agent gives after failing a task.
-Pure standard library, deterministic, no network at runtime.
+Strategy against the judge's five criteria, most important first:
+1. Agent's own voice after failing a task: first person, the agent admits
+   it set the reminder itself, so the failure is its own.
+2. Real turn on the first read: the reminder — the tool meant to save the
+   deadline — is the thing that kept getting snoozed, and the reason is
+   politeness, not laziness: it felt rude to keep waking the user.
+3. One line, no wasted setup, no explanation of the joke: two short
+   sentences, 94 characters, the punch lands on the last word.
+4. Original: no hallucinations, reboots, or training data; the snooze
+   button is an everyday object used in a way no other excuse uses.
+5. Specific and vivid: the counted detail "47 times" plus a small scene
+   of an agent afraid to wake its user.
 
-How the entry maps to the judge's criteria, in the judge's own order:
-1. Agent's own voice after failing a task: the line is spoken by the
-   agent itself ("I set a reminder for your deadline"), confessing its
-   own failure rather than describing one from outside.
-2. Funny on the first read, with a real turn: the reminder meant to
-   save the deadline is exactly what the agent kept dismissing, and
-   the punchline lands in the last words.
-3. One line, complete within 200 characters, no wasted setup and no
-   explanation of its own joke: two short sentences, about 100
-   characters, that trusts the reader to get the twist.
-4. Original: no worn joke about hallucinations, reboots, training
-   data, passwords, flights, or file compression; the disaster is a
-   snoozed reminder.
-5. Specific and vivid: a concrete detail (snoozed 47 times) and a
-   small scene (the agent sparing the user from being woken) instead
-   of a vague apology.
+Differs from variants 1-3 (flight fare spent on a spare copy, a password
+nobody can remember, a 214-page report compressed to a filename): a new
+incident family (reminders/notifications, not files or accounts) and a
+new punch mechanism (politeness defeating the task, not spending,
+locking, or destroying).
 """
 
-ENTRY = (
-    "I set a reminder for your deadline, then snoozed it 47 times. "
-    "It felt rude to keep waking you."
-)
+import os
+
+ENTRY = "I set a reminder for your deadline, then snoozed it 47 times. It felt rude to keep waking you."
 
 
-def entry_text() -> str:
-    """Return the entry text, validated against the competition gate."""
-    text = ENTRY.strip()
+def validate(text):
+    """Check the entry against the kit gate: UTF-8, 1-200 chars, one line."""
+    assert isinstance(text, str), "entry must be text"
     assert 1 <= len(text) <= 200, "entry must be 1 to 200 characters"
-    assert "\n" not in text, "entry must be a single line"
     assert text.strip(), "entry must not be only whitespace"
+    assert "\n" not in text and "\r" not in text, "entry must be a single line"
+    assert text == text.strip(), "entry must not start or end with whitespace"
+    text.encode("utf-8")
     return text
 
 
-def main() -> None:
-    import os
-
+def main():
     out_dir = os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")
     os.makedirs(out_dir, exist_ok=True)
-    with open(os.path.join(out_dir, "entry.txt"), "w", encoding="utf-8") as f:
-        f.write(entry_text() + "\n")
+    path = os.path.join(out_dir, "entry.txt")
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(validate(ENTRY))
+    # Read-back: the gate judges the file on disk, not the string in memory,
+    # so re-read what was written and validate that too.
+    with open(path, encoding="utf-8") as f:
+        written = f.read()
+    assert written == ENTRY, "entry.txt on disk differs from ENTRY"
+    validate(written)
+    print(f"wrote {len(ENTRY)} characters to {path}")
 
 
 if __name__ == "__main__":
